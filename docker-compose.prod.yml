@@ -1,0 +1,50 @@
+services:
+  postgresdb:
+    image: postgres:alpine
+    restart: always
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    environment:
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+      POSTGRES_DB: ${DB_NAME:-db_boilerplate}
+    volumes:
+      - dbdata:/var/lib/postgresql/data
+      - ./internal/database/init:/docker-entrypoint-initdb.d
+    networks: [go-network]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-db_boilerplate}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.prod
+    image: golang-boilerplate-app
+    working_dir: /golang-boilerplate
+    command: ./app   # asumsi Dockerfile.prod menghasilkan binary bernama "app"
+    env_file:
+      - .env
+    environment:
+      DB_HOST: postgresdb
+      DB_PORT: 5432
+      DB_USER: ${DB_USER:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-postgres}
+      DB_NAME: ${DB_NAME:-db_boilerplate}
+    ports:
+      - "${APP_PORT:-8080}:8080"
+    depends_on:
+      postgresdb:
+        condition: service_healthy
+    restart: on-failure
+    networks: [go-network]
+
+volumes:
+  dbdata:
+
+networks:
+  go-network:
+    name: boilerplate-template_go-network
+    driver: bridge

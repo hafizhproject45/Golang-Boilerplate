@@ -1,0 +1,22 @@
+{{define "repository"}}package repository
+
+import (
+	model "github.com/hafizhproject45/Golang-Boilerplate.git/internal/modules/{{Kebab .FeatName}}s/models"
+	"github.com/hafizhproject45/Golang-Boilerplate.git/internal/repository"
+	"gorm.io/gorm"
+)
+
+type {{Pascal .Entity}}Repository interface {
+	repository.BaseRepository[model.{{Pascal .Entity}}]
+}
+
+type {{Pascal .Entity}}RepositoryImpl struct {
+	*repository.BaseRepositoryImpl[model.{{Pascal .Entity}}]
+}
+
+func New{{Pascal .Entity}}Repository(db *gorm.DB) {{Pascal .Entity}}Repository {
+	return &{{Pascal .Entity}}RepositoryImpl{
+		BaseRepositoryImpl: repository.NewBaseRepository[model.{{Pascal .Entity}}](db),
+	}
+}
+{{end}}

@@ -1,0 +1,141 @@
+{{define "controller"}}package controller
+
+import (
+	"math"
+	"strconv"
+
+	"github.com/hafizhproject45/Golang-Boilerplate.git/internal/modules/{{Kebab .FeatName}}s/dto"
+	service "github.com/hafizhproject45/Golang-Boilerplate.git/internal/modules/{{Kebab .FeatName}}s/services"
+	validation "github.com/hafizhproject45/Golang-Boilerplate.git/internal/modules/{{Kebab .FeatName}}s/validations"
+	"github.com/hafizhproject45/Golang-Boilerplate.git/internal/response"
+
+	"github.com/gofiber/fiber/v2"
+)
+
+type {{Pascal .Entity}}Controller struct {
+	{{Pascal .Entity}}Service service.{{Pascal .Entity}}Service
+}
+
+func New{{Pascal .Entity}}Controller({{Camel .Entity}}Service service.{{Pascal .Entity}}Service) *{{Pascal .Entity}}Controller {
+	return &{{Pascal .Entity}}Controller{
+		{{Pascal .Entity}}Service: {{Camel .Entity}}Service,
+	}
+}
+
+func (u *{{Pascal .Entity}}Controller) GetAll(c *fiber.Ctx) error {
+	query := &validation.Query{
+		Page:   c.QueryInt("page", 1),
+		Limit:  c.QueryInt("limit", 10),
+		Search: c.Query("search", ""),
+	}
+
+	result, totalResults, err := u.{{Pascal .Entity}}Service.GetAll(c, query)
+	if err != nil {
+		return err
+	}
+
+	return c.Status(fiber.StatusOK).
+		JSON(response.SuccessWithPaginate[dto.{{Pascal .Entity}}ListDTO]{
+			Code:    fiber.StatusOK,
+			Status:  "success",
+			Message: "Get all {{Camel .Entity}}s successfully",
+			Meta: response.Meta{
+				Page:         query.Page,
+				Limit:        query.Limit,
+				TotalPages:   int64(math.Ceil(float64(totalResults) / float64(query.Limit))),
+				TotalResults: totalResults,
+			},
+			Data: dto.To{{Pascal .Entity}}ListDTOs(result),
+		})
+}
+
+func (u *{{Pascal .Entity}}Controller) GetOne(c *fiber.Ctx) error {
+	param := c.Params("id")
+
+	id, err := strconv.Atoi(param)
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid Id")
+	}
+
+	result, err := u.{{Pascal .Entity}}Service.GetOne(c, uint(id))
+	if err != nil {
+		return err
+	}
+
+	return c.Status(fiber.StatusOK).
+		JSON(response.Success{
+			Code:    fiber.StatusOK,
+			Status:  "success",
+			Message: "Get {{Camel .Entity}} successfully",
+			Data:    dto.To{{Pascal .Entity}}ListDTO(*result),
+		})
+}
+
+func (u *{{Pascal .Entity}}Controller) CreateOne(c *fiber.Ctx) error {
+	req := new(validation.Create)
+
+	if err := c.BodyParser(req); err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid request body")
+	}
+
+	result, err := u.{{Pascal .Entity}}Service.CreateOne(c, req)
+	if err != nil {
+		return err
+	}
+
+	return c.Status(fiber.StatusCreated).
+		JSON(response.Success{
+			Code:    fiber.StatusCreated,
+			Status:  "success",
+			Message: "Create {{Camel .Entity}} successfully",
+			Data:    dto.To{{Pascal .Entity}}ListDTO(*result),
+		})
+}
+
+func (u *{{Pascal .Entity}}Controller) UpdateOne(c *fiber.Ctx) error {
+	req := new(validation.Update)
+	param := c.Params("id")
+
+	id, err := strconv.Atoi(param)
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid Id")
+	}
+
+	if err := c.BodyParser(req); err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid request body")
+	}
+
+	result, err := u.{{Pascal .Entity}}Service.UpdateOne(c, req, uint(id))
+	if err != nil {
+		return err
+	}
+
+	return c.Status(fiber.StatusOK).
+		JSON(response.Success{
+			Code:    fiber.StatusOK,
+			Status:  "success",
+			Message: "Update {{Camel .Entity}} successfully",
+			Data:    dto.To{{Pascal .Entity}}ListDTO(*result),
+		})
+}
+
+func (u *{{Pascal .Entity}}Controller) DeleteOne(c *fiber.Ctx) error {
+	param := c.Params("id")
+
+	id, err := strconv.Atoi(param)
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid Id")
+	}
+
+	if err := u.{{Pascal .Entity}}Service.DeleteOne(c, uint(id)); err != nil {
+		return err
+	}
+
+	return c.Status(fiber.StatusOK).
+		JSON(response.Common{
+			Code:    fiber.StatusOK,
+			Status:  "success",
+			Message: "Delete {{Camel .Entity}} successfully",
+		})
+}
+{{end}}

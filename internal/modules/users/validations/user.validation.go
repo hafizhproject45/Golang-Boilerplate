@@ -1,0 +1,15 @@
+package validation
+
+type Create struct {
+	Name   string `json:"name" validate:"required_strict,min=3"`
+}
+
+type Update struct {
+	Name   *string `json:"name,omitempty" validate:"omitempty,max=50"`
+}
+
+type Query struct {
+	Page   int    `query:"page" validate:"omitempty,number,min=1"`
+	Limit  int    `query:"limit" validate:"omitempty,number,min=1,max=100"`
+	Search string `query:"search" validate:"omitempty,max=50"`
+}

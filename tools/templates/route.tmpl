@@ -1,0 +1,23 @@
+{{define "route"}}package {{Kebab .Entity}}s
+
+import (
+	m "github.com/hafizhproject45/Golang-Boilerplate.git/internal/middleware"
+	controller "github.com/hafizhproject45/Golang-Boilerplate.git/internal/modules/{{Kebab .FeatName}}s/controllers"
+	{{Camel .Entity}} "github.com/hafizhproject45/Golang-Boilerplate.git/internal/modules/{{Kebab .FeatName}}s/services"
+	user "github.com/hafizhproject45/Golang-Boilerplate.git/internal/modules/users/services"
+
+	"github.com/gofiber/fiber/v2"
+)
+
+func {{Pascal .Entity}}Routes(v1 fiber.Router, u user.UserService, s {{Camel .Entity}}.{{Pascal .Entity}}Service) {
+	ctrl := controller.New{{Pascal .Entity}}Controller(s)
+
+	route := v1.Group("/{{Kebab .Entity}}s")
+
+	route.Get("/", m.Auth(u), ctrl.GetAll)
+	route.Post("/", m.Auth(u), ctrl.CreateOne)
+	route.Get("/:id", m.Auth(u), ctrl.GetOne)
+	route.Patch("/:id", m.Auth(u), ctrl.UpdateOne)
+	route.Delete("/:id", m.Auth(u), ctrl.DeleteOne)
+}
+{{end}}

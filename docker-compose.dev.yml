@@ -1,0 +1,88 @@
+services:
+  postgresdb:
+    image: postgres:alpine
+    restart: always
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    environment:
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+      POSTGRES_DB: ${DB_NAME:-db_boilerplate}
+    volumes:
+      - dbdata:/var/lib/postgresql/data
+      - ./internal/database/init:/docker-entrypoint-initdb.d
+    networks: [go-network]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-db_boilerplate}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli ping | grep PONG"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks: [go-network]
+
+  mailhog:
+    image: mailhog/mailhog:latest
+    restart: unless-stopped
+    ports:
+      - "1025:1025"  # SMTP
+      - "8025:8025"  # Web UI
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8025/ || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks: [go-network]
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    image: cosmtrek/air:v1.52.3
+    working_dir: /golang-boilerplate
+    volumes:
+      - .:/golang-boilerplate
+      - ./internal/config/jwtRS256.key:/run/keys/jwtRS256.key:ro
+      - ./internal/config/jwtRS256.key.pub:/run/keys/jwtRS256.key.pub:ro
+    command: air -c .air.toml
+    env_file:
+      - .env
+    environment:
+      DB_HOST: postgresdb
+      DB_PORT: 5432
+      DB_USER: ${DB_USER:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-postgres}
+      DB_NAME: ${DB_NAME:-db_boilerplate}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      SMTP_HOST: ${SMTP_HOST:-mailhog}
+      SMTP_PORT: ${SMTP_PORT:-1025}
+    ports:
+      - "${APP_PORT:-8080}:8080"
+    depends_on:
+      postgresdb:
+        condition: service_healthy
+    networks: [go-network]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/healthz || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+
+volumes:
+  dbdata:
+  go-mod-cache:
+  go-build-cache:
+
+networks:
+  go-network:
+    name: boilerplate-template_go-network
+    driver: bridge

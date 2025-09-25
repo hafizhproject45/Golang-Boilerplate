@@ -1,0 +1,40 @@
+# Git & CI
+.git
+.gitignore
+.github
+
+# Build artifacts
+/tmp
+/bin
+/out
+*.exe
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Go specific
+*.exe
+*.test
+*.prof
+*.log
+
+# Dependencies cache (biar tidak kebawa)
+vendor/
+go-build-cache/
+go-mod-cache/
+
+# Editor/IDE
+.vscode
+.idea
+*.swp
+
+# Env & secrets
+.env
+.env.*
+!/.env.example
+
+# Docker sendiri
+Dockerfile*
+docker-compose*.yml

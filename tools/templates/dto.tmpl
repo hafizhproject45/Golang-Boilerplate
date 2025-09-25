@@ -1,0 +1,38 @@
+{{define "dto"}}package dto
+
+import (
+	"time"
+
+	model "github.com/hafizhproject45/Golang-Boilerplate.git/internal/modules/{{Kebab .FeatName}}s/models"
+)
+
+// === DTO Structs ===
+
+type {{Pascal .Entity}}ListDTO struct {
+	Id        uint      `json:"id"`
+	Name      string    `json:"name"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+type {{Pascal .Entity}}DetailDTO struct {
+	{{Pascal .Entity}}ListDTO
+}
+
+// === Mapper Functions ===
+
+func To{{Pascal .Entity}}ListDTO(m model.{{Pascal .Entity}}) {{Pascal .Entity}}ListDTO {
+	return {{Pascal .Entity}}ListDTO{
+		Id:     m.Id,
+		Name:   m.Name,
+	}
+}
+
+func To{{Pascal .Entity}}ListDTOs(m []model.{{Pascal .Entity}}) []{{Pascal .Entity}}ListDTO {
+	result := make([]{{Pascal .Entity}}ListDTO, len(m))
+	for i, r := range m {
+		result[i] = To{{Pascal .Entity}}ListDTO(r)
+	}
+	return result
+}
+{{end}}

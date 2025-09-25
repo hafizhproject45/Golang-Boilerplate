@@ -1,0 +1,27 @@
+{{define "module"}}package {{Kebab .Entity}}s
+
+import (
+	"github.com/go-playground/validator/v10"
+	"github.com/gofiber/fiber/v2"
+	"gorm.io/gorm"
+
+	r{{Pascal .Entity}} "github.com/hafizhproject45/Golang-Boilerplate.git/internal/modules/{{Kebab .FeatName}}s/repositories"
+	s{{Pascal .Entity}} "github.com/hafizhproject45/Golang-Boilerplate.git/internal/modules/{{Kebab .FeatName}}s/services"
+
+	rUser "github.com/hafizhproject45/Golang-Boilerplate.git/internal/modules/users/repositories"
+	sUser "github.com/hafizhproject45/Golang-Boilerplate.git/internal/modules/users/services"
+)
+
+type {{Pascal .Entity}}Module struct{}
+
+func ({{Pascal .Entity}}Module) RegisterRoutes(router fiber.Router, db *gorm.DB, validate *validator.Validate) {
+	{{Camel .Entity}}Repo := r{{Pascal .Entity}}.New{{Pascal .Entity}}Repository(db)
+	userRepo := rUser.NewUserRepository(db)
+
+	{{Camel .Entity}}Service := s{{Pascal .Entity}}.New{{Pascal .Entity}}Service({{Camel .Entity}}Repo, validate)
+	userService := sUser.NewUserService(userRepo, validate)
+
+	{{Pascal .Entity}}Routes(router, userService, {{Camel .Entity}}Service)
+}
+
+{{end}}

@@ -1,0 +1,120 @@
+{{define "service"}}package service
+
+import (
+	"errors"
+
+	model "github.com/hafizhproject45/Golang-Boilerplate.git/internal/modules/{{Kebab .FeatName}}s/models"
+	repository "github.com/hafizhproject45/Golang-Boilerplate.git/internal/modules/{{Kebab .FeatName}}s/repositories"
+	validation "github.com/hafizhproject45/Golang-Boilerplate.git/internal/modules/{{Kebab .FeatName}}s/validations"
+	"github.com/hafizhproject45/Golang-Boilerplate.git/internal/utils"
+
+	"github.com/go-playground/validator/v10"
+	"github.com/gofiber/fiber/v2"
+	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
+)
+
+type {{Pascal .Entity}}Service interface {
+	GetAll(ctx *fiber.Ctx, params *validation.Query) ([]model.{{Pascal .Entity}}, int64, error)
+	GetOne(ctx *fiber.Ctx, id uint) (*model.{{Pascal .Entity}}, error)
+	CreateOne(ctx *fiber.Ctx, req *validation.Create) (*model.{{Pascal .Entity}}, error)
+	UpdateOne(ctx *fiber.Ctx, req *validation.Update, id uint) (*model.{{Pascal .Entity}}, error)
+	DeleteOne(ctx *fiber.Ctx, id uint) error
+}
+
+type {{Camel .Entity}}Service struct {
+	Log        *logrus.Logger
+	Validate   *validator.Validate
+	Repository repository.{{Pascal .Entity}}Repository
+}
+
+func New{{Pascal .Entity}}Service(repo repository.{{Pascal .Entity}}Repository, validate *validator.Validate) {{Pascal .Entity}}Service {
+	return &{{Camel .Entity}}Service{
+		Log:        utils.Log,
+		Validate:   validate,
+		Repository: repo,
+	}
+}
+func (s {{Camel .Entity}}Service) GetAll(c *fiber.Ctx, params *validation.Query) ([]model.{{Pascal .Entity}}, int64, error) {
+	if err := s.Validate.Struct(params); err != nil {
+		return nil, 0, err
+	}
+
+	offset := (params.Page - 1) * params.Limit
+
+	{{Camel .Entity}}s, total, err := s.Repository.GetAll(c.Context(), offset, params.Limit, func(db *gorm.DB) *gorm.DB {
+		if params.Search != "" {
+			return db.Where("name LIKE ?", "%"+params.Search+"%")
+		}
+		return db.Order("created_at DESC").Order("updated_at DESC")
+	})
+
+	if err != nil {
+		s.Log.Errorf("Failed to get {{Camel .Entity}}s: %+v", err)
+		return nil, 0, err
+	}
+	return {{Camel .Entity}}s, total, nil
+}
+
+func (s {{Camel .Entity}}Service) GetOne(c *fiber.Ctx, id uint) (*model.{{Pascal .Entity}}, error) {
+	{{Camel .Entity}}, err := s.Repository.GetByID(c.Context(), id, nil)
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, fiber.NewError(fiber.StatusNotFound, "{{Pascal .Entity}} not found")
+	}
+	if err != nil {
+		s.Log.Errorf("Failed get {{Camel .Entity}} by id: %+v", err)
+		return nil, err
+	}
+	return {{Camel .Entity}}, nil
+}
+
+func (s *{{Camel .Entity}}Service) CreateOne(c *fiber.Ctx, req *validation.Create) (*model.{{Pascal .Entity}}, error) {
+	if err := s.Validate.Struct(req); err != nil {
+		return nil, err
+	}
+
+	createBody := &model.{{Pascal .Entity}}{
+		Name:   req.Name,
+	}
+
+	if err := s.Repository.CreateOne(c.Context(), createBody, nil); err != nil {
+		s.Log.Errorf("Failed to create {{Camel .Entity}}: %+v", err)
+		return nil, err
+	}
+
+	return createBody, nil
+}
+
+func (s {{Camel .Entity}}Service) UpdateOne(c *fiber.Ctx, req *validation.Update, id uint) (*model.{{Pascal .Entity}}, error) {
+	if err := s.Validate.Struct(req); err != nil {
+		return nil, err
+	}
+
+	updateBody := make(map[string]any)
+
+	if req.Name != nil {
+		updateBody["name"] = *req.Name
+	}
+
+	if err := s.Repository.PatchOne(c.Context(), id, updateBody, nil); err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, fiber.NewError(fiber.StatusNotFound, "{{Pascal .Entity}} not found")
+		}
+		s.Log.Errorf("Failed to update {{Camel .Entity}}: %+v", err)
+		return nil, err
+	}
+
+	return s.GetOne(c, id)
+}
+
+func (s {{Camel .Entity}}Service) DeleteOne(c *fiber.Ctx, id uint) error {
+	if err := s.Repository.DeleteOne(c.Context(), id); err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return fiber.NewError(fiber.StatusNotFound, "{{Pascal .Entity}} not found")
+		}
+		s.Log.Errorf("Failed to delete {{Camel .Entity}}: %+v", err)
+		return err
+	}
+	return nil
+}
+{{end}}

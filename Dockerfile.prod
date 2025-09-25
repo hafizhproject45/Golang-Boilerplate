@@ -1,0 +1,33 @@
+FROM golang:1.23-alpine AS builder
+
+# Install tools build
+RUN apk add --no-cache git curl bash build-base
+
+WORKDIR /golang-boilerplate
+
+# Cache dependencies
+COPY go.mod go.sum ./
+RUN go mod download
+
+# Copy source code
+COPY . .
+
+# Build binary dari entrypoint (cmd/api/main.go)
+RUN CGO_ENABLED=0 GOOS=linux go build -o app ./cmd/api
+
+FROM alpine:3.20
+
+# Install tools
+RUN apk add --no-cache curl
+
+WORKDIR /golang-boilerplate
+
+# Copy binary hasil build
+COPY --from=builder /golang-boilerplate/app .
+
+# Copy file env example
+COPY --from=builder /golang-boilerplate/.env.example .env
+
+EXPOSE 8080
+
+CMD ["./app"]

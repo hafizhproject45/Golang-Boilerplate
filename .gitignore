@@ -1,0 +1,21 @@
+# Environment variables
+.env
+
+# Air temp dir
+tmp/
+
+# Binaries
+main
+bin/
+*.exe
+*.out
+
+# Logs & reports
+*.log
+*.txt
+coverage/
+
+# IDE / editor files
+.vscode/
+.idea/
+*.swp
