@@ -105,8 +105,8 @@ internal/
 
 ## ✨ Author
 
-IT Development PT Mitra Berlian Unggas
+Hafizh Athallah Yovanka
 
 ## 📃 License
 
-This project is private. All rights reserved.
+Free to use
